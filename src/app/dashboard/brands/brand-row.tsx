@@ -1,0 +1,101 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { updateBrandVerification } from "./actions";
+
+interface Brand {
+  brand_id: string;
+  brand_name: string | null;
+  logo_url: string | null;
+  contact_phone: string | null;
+  verification_status: string | null;
+  gstin: string | null;
+}
+
+export function BrandRow({ brand }: { brand: Brand }) {
+  const [loading, setLoading] = useState<string | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState(brand.verification_status);
+
+  const handleVerification = async (action: "verified" | "rejected" | "pending") => {
+    setLoading(action);
+    const result = await updateBrandVerification(brand.brand_id, action);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setVerificationStatus(action);
+    }
+    setLoading(null);
+  };
+
+  const statusColors: Record<string, string> = {
+    verified: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
+    rejected: "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+    pending: "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400",
+  };
+
+  return (
+    <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <td className="px-6 py-4">
+        <Link
+          href={`/dashboard/brands/${brand.brand_id}`}
+          className="flex items-center gap-3 group"
+        >
+          {brand.logo_url ? (
+            <img src={brand.logo_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 text-xs">
+              {brand.brand_name?.[0] || "?"}
+            </div>
+          )}
+          <span className="text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+            {brand.brand_name || "—"}
+          </span>
+        </Link>
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+        {brand.contact_phone || "—"}
+      </td>
+      <td className="px-6 py-4">
+        <span
+          className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            statusColors[verificationStatus || "pending"] || statusColors.pending
+          }`}
+        >
+          {verificationStatus || "pending"}
+        </span>
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 font-mono text-xs">
+        {brand.gstin || "—"}
+      </td>
+      <td className="px-6 py-4">
+        {verificationStatus === "pending" ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleVerification("verified")}
+              disabled={loading !== null}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {loading === "verified" ? "..." : "Verify"}
+            </button>
+            <button
+              onClick={() => handleVerification("rejected")}
+              disabled={loading !== null}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {loading === "rejected" ? "..." : "Reject"}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => handleVerification("pending")}
+            disabled={loading !== null}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {loading ? "..." : "Reset"}
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
