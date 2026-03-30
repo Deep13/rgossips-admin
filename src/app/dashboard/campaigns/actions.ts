@@ -4,26 +4,37 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 
-async function uploadImage(
-  adminClient: ReturnType<typeof createAdminClient>,
-  bucket: string,
-  file: File,
-  path: string
-): Promise<string | null> {
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+export async function uploadCampaignImage(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
+  const file = formData.get("file") as File | null;
+  const folder = (formData.get("folder") as string) || "misc";
+
+  if (!file || file.size === 0) return { error: "No file provided" };
+  if (!file.type.startsWith("image/")) return { error: "Only images are allowed" };
+  if (file.size > 5 * 1024 * 1024) return { error: "File must be under 5MB" };
+
+  const adminClient = createAdminClient();
+  const timestamp = Date.now();
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${folder}/${timestamp}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const arrayBuffer = await file.arrayBuffer();
   const { error } = await adminClient.storage
-    .from(bucket)
-    .upload(path, buffer, {
+    .from("campaign-images")
+    .upload(path, Buffer.from(arrayBuffer), {
       contentType: file.type,
       upsert: true,
     });
 
-  if (error) return null;
+  if (error) return { error: error.message };
 
-  const { data } = adminClient.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+  const { data } = adminClient.storage.from("campaign-images").getPublicUrl(path);
+  return { url: data.publicUrl };
 }
 
 export async function createCampaign(formData: FormData) {
@@ -42,6 +53,11 @@ export async function createCampaign(formData: FormData) {
   const startDate = formData.get("campaign_start_date") as string;
   const endDate = formData.get("campaign_end_date") as string;
   const deadline = formData.get("application_deadline") as string;
+  const campaignType = formData.get("campaign_type") as string;
+  const budgetTotal = formData.get("budget_total") as string;
+  const budgetPerInfluencer = formData.get("budget_per_influencer") as string;
+  const followerMax = formData.get("target_follower_max") as string;
+  const influencerTier = formData.get("target_influencer_tier") as string;
 
   // Content deliverables
   const reels = formData.get("num_reels") as string;
@@ -54,51 +70,17 @@ export async function createCampaign(formData: FormData) {
   const minEngagement = formData.get("min_engagement_rate") as string;
   const targetCities = formData.get("target_cities") as string;
 
-  // Images
-  const bannerFile = formData.get("banner_image") as File | null;
-  const galleryFiles = formData.getAll("gallery_images") as File[];
+  // Image URLs (uploaded client-side to Supabase Storage)
+  const bannerUrl = formData.get("banner_image_url") as string | null;
+  const galleryUrls = formData.getAll("gallery_image_urls") as string[];
 
   if (!title) return { error: "Title is required" };
   if (!brandId) return { error: "Brand is required" };
+  if (!startDate) return { error: "Start date is required" };
+  if (!endDate) return { error: "Expiry date is required" };
+  if (!deadline) return { error: "Application deadline is required" };
 
   const adminClient = createAdminClient();
-
-  // Ensure storage bucket exists
-  await adminClient.storage.createBucket("campaign-images", {
-    public: true,
-    fileSizeLimit: 5 * 1024 * 1024,
-    allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
-  });
-
-  const timestamp = Date.now();
-
-  // Upload banner image
-  let bannerUrl: string | null = null;
-  if (bannerFile && bannerFile.size > 0) {
-    const ext = bannerFile.name.split(".").pop() || "jpg";
-    bannerUrl = await uploadImage(
-      adminClient,
-      "campaign-images",
-      bannerFile,
-      `banners/${timestamp}_${Math.random().toString(36).slice(2, 8)}.${ext}`
-    );
-  }
-
-  // Upload gallery images
-  const galleryUrls: string[] = [];
-  for (let i = 0; i < galleryFiles.length; i++) {
-    const file = galleryFiles[i];
-    if (file && file.size > 0) {
-      const ext = file.name.split(".").pop() || "jpg";
-      const url = await uploadImage(
-        adminClient,
-        "campaign-images",
-        file,
-        `gallery/${timestamp}_${i}_${Math.random().toString(36).slice(2, 8)}.${ext}`
-      );
-      if (url) galleryUrls.push(url);
-    }
-  }
 
   // Build content_types_required as a structured array
   const contentTypes: string[] = [];
@@ -111,7 +93,8 @@ export async function createCampaign(formData: FormData) {
   let fullDescription = description || "";
   const metadata: Record<string, unknown> = {};
   if (bannerUrl) metadata.banner_image = bannerUrl;
-  if (galleryUrls.length > 0) metadata.gallery_images = galleryUrls;
+  const validGalleryUrls = galleryUrls.filter(Boolean);
+  if (validGalleryUrls.length > 0) metadata.gallery_images = validGalleryUrls;
   if (minEngagement) metadata.min_engagement_rate = parseFloat(minEngagement);
   if (Object.keys(metadata).length > 0) {
     fullDescription = fullDescription
@@ -119,18 +102,27 @@ export async function createCampaign(formData: FormData) {
       : JSON.stringify(metadata);
   }
 
+  const cities = targetCities
+    ? targetCities.split(",").map((c) => c.trim()).filter(Boolean)
+    : ["All India"];
+
   const { error } = await adminClient.from("campaigns").insert({
     brand_id: brandId,
     title,
-    description: fullDescription || null,
-    target_categories: category.length > 0 ? category : null,
-    max_influencers: maxInfluencers ? parseInt(maxInfluencers) : null,
-    campaign_start_date: startDate || null,
-    campaign_end_date: endDate || null,
-    application_deadline: deadline || null,
-    content_types_required: contentTypes.length > 0 ? contentTypes : null,
-    target_follower_min: minFollowers ? parseInt(minFollowers) : null,
-    target_cities: targetCities ? targetCities.split(",").map((c) => c.trim()).filter(Boolean) : null,
+    description: fullDescription || title,
+    campaign_type: campaignType || "barter",
+    target_categories: category.length > 0 ? category : ["General"],
+    max_influencers: maxInfluencers ? parseInt(maxInfluencers) : 10,
+    campaign_start_date: startDate,
+    campaign_end_date: endDate,
+    application_deadline: deadline,
+    content_types_required: contentTypes.length > 0 ? contentTypes : ["reels"],
+    budget_total: budgetTotal ? parseInt(budgetTotal) : 0,
+    budget_per_influencer: budgetPerInfluencer ? parseInt(budgetPerInfluencer) : 0,
+    target_follower_min: minFollowers ? parseInt(minFollowers) : 0,
+    target_follower_max: followerMax ? parseInt(followerMax) : 1000000,
+    target_influencer_tier: influencerTier || "all",
+    target_cities: cities,
     status: "draft",
   });
 

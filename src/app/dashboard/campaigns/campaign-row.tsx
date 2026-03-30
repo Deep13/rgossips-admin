@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { updateCampaignStatus } from "./actions";
+import { ButtonSpinner } from "@/components/spinner";
 
 interface Campaign {
   campaign_id: string;
@@ -17,6 +18,7 @@ interface Campaign {
 }
 
 export function CampaignRow({ campaign }: { campaign: Campaign }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(campaign.status || "draft");
 
@@ -43,15 +45,18 @@ export function CampaignRow({ campaign }: { campaign: Campaign }) {
     return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
   };
 
+  const actionBtnBase =
+    "inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border";
+
   return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+    <tr
+      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+      onClick={() => router.push(`/dashboard/campaigns/${campaign.campaign_id}`)}
+    >
       <td className="px-6 py-4">
-        <Link
-          href={`/dashboard/campaigns/${campaign.campaign_id}`}
-          className="text-sm text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-medium"
-        >
+        <span className="text-sm text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-medium">
           {campaign.title || "—"}
-        </Link>
+        </span>
         {campaign.target_categories && campaign.target_categories.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1">
             {campaign.target_categories.map((cat) => (
@@ -86,14 +91,19 @@ export function CampaignRow({ campaign }: { campaign: Campaign }) {
           <div className="text-xs text-gray-400">to {formatDate(campaign.campaign_end_date)}</div>
         )}
       </td>
-      <td className="px-6 py-4">
+      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2">
           {status === "draft" && (
             <button
               onClick={() => handleStatusChange("active")}
               disabled={loading}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer disabled:opacity-50"
+              className={`${actionBtnBase} bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40`}
             >
+              {loading ? <ButtonSpinner /> : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                </svg>
+              )}
               {loading ? "..." : "Activate"}
             </button>
           )}
@@ -102,15 +112,25 @@ export function CampaignRow({ campaign }: { campaign: Campaign }) {
               <button
                 onClick={() => handleStatusChange("paused")}
                 disabled={loading}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors cursor-pointer disabled:opacity-50"
+                className={`${actionBtnBase} bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-100 dark:hover:bg-yellow-900/40`}
               >
+                {loading ? <ButtonSpinner /> : (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
                 {loading ? "..." : "Pause"}
               </button>
               <button
                 onClick={() => handleStatusChange("completed")}
                 disabled={loading}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer disabled:opacity-50"
+                className={`${actionBtnBase} bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40`}
               >
+                {loading ? <ButtonSpinner /> : (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
                 {loading ? "..." : "Complete"}
               </button>
             </>
@@ -119,13 +139,18 @@ export function CampaignRow({ campaign }: { campaign: Campaign }) {
             <button
               onClick={() => handleStatusChange("active")}
               disabled={loading}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer disabled:opacity-50"
+              className={`${actionBtnBase} bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40`}
             >
+              {loading ? <ButtonSpinner /> : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                </svg>
+              )}
               {loading ? "..." : "Resume"}
             </button>
           )}
           {status === "completed" && (
-            <span className="text-xs text-gray-400">Done</span>
+            <span className="text-xs text-gray-400 italic">Completed</span>
           )}
         </div>
       </td>

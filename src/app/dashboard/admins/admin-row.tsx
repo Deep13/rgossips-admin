@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { removeAdmin } from "./actions";
+import { ButtonSpinner } from "@/components/spinner";
 
 interface Admin {
   id: string;
@@ -71,8 +72,13 @@ export function AdminRow({
             <button
               onClick={handleRemove}
               disabled={loading}
-              className="text-sm text-red-500 hover:text-red-700 disabled:text-red-300 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              {loading ? <ButtonSpinner /> : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              )}
               {loading ? "Removing..." : "Remove"}
             </button>
           )}

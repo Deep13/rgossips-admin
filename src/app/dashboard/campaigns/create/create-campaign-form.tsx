@@ -2,9 +2,22 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createCampaign } from "../actions";
+import { createCampaign, uploadCampaignImage } from "../actions";
+import { FullPageLoader } from "@/components/spinner";
 
 const CATEGORIES = ["Hotel", "Food and Dining", "Tech Gadgets", "Fashion and Beauty"];
+
+async function uploadImage(file: File, folder: string): Promise<string | null> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("folder", folder);
+  const result = await uploadCampaignImage(fd);
+  if (result.error) {
+    console.error("Upload error:", result.error);
+    return null;
+  }
+  return result.url ?? null;
+}
 
 interface Brand {
   brand_id: string;
@@ -20,6 +33,7 @@ export function CreateCampaignForm({ brands }: { brands: Brand[] }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("Creating campaign...");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [bannerImage, setBannerImage] = useState<ImagePreview | null>(null);
   const [galleryImages, setGalleryImages] = useState<ImagePreview[]>([]);
@@ -81,20 +95,43 @@ export function CreateCampaignForm({ brands }: { brands: Brand[] }) {
   const handleSubmit = async (formData: FormData) => {
     setError("");
     setLoading(true);
-    selectedCategories.forEach((cat) => formData.append("category", cat));
-    if (bannerImage) formData.append("banner_image", bannerImage.file);
-    galleryImages.forEach((img) => formData.append("gallery_images", img.file));
-    const result = await createCampaign(formData);
-    if (result.error) {
-      setError(result.error);
+
+    try {
+      // Append categories
+      selectedCategories.forEach((cat) => formData.append("category", cat));
+
+      // Upload images one-by-one via server action, then pass URLs
+      if (bannerImage) {
+        setLoadingMsg("Uploading banner image...");
+        const bannerUrl = await uploadImage(bannerImage.file, "banners");
+        if (bannerUrl) formData.append("banner_image_url", bannerUrl);
+      }
+
+      if (galleryImages.length > 0) {
+        for (let i = 0; i < galleryImages.length; i++) {
+          setLoadingMsg(`Uploading gallery image ${i + 1} of ${galleryImages.length}...`);
+          const url = await uploadImage(galleryImages[i].file, "gallery");
+          if (url) formData.append("gallery_image_urls", url);
+        }
+      }
+
+      setLoadingMsg("Saving campaign...");
+      const result = await createCampaign(formData);
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+      } else {
+        router.push("/dashboard/campaigns");
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
       setLoading(false);
-    } else {
-      router.push("/dashboard/campaigns");
     }
   };
 
   return (
     <form action={handleSubmit} className="space-y-6">
+      {loading && <FullPageLoader message={loadingMsg} />}
       {error && (
         <div className="flex items-center gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
           <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,6 +203,22 @@ export function CreateCampaignForm({ brands }: { brands: Brand[] }) {
                 </div>
                 <div>
                   <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Campaign Type <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    name="campaign_type"
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all appearance-none"
+                  >
+                    <option value="barter">Barter</option>
+                    <option value="paid">Paid</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     Total Slots
                   </label>
                   <input
@@ -173,6 +226,30 @@ export function CreateCampaignForm({ brands }: { brands: Brand[] }) {
                     type="number"
                     min="1"
                     placeholder="e.g. 10"
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Total Budget
+                  </label>
+                  <input
+                    name="budget_total"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 50000"
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Budget Per Influencer
+                  </label>
+                  <input
+                    name="budget_per_influencer"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 5000"
                     className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
                   />
                 </div>
@@ -402,10 +479,35 @@ export function CreateCampaignForm({ brands }: { brands: Brand[] }) {
                     name="target_follower_min"
                     type="number"
                     min="0"
-                    placeholder="e.g. 1,000"
+                    placeholder="e.g. 1000"
                     className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
                   />
                 </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Max. Followers</label>
+                  <input
+                    name="target_follower_max"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 100000"
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Influencer Tier</label>
+                  <select
+                    name="target_influencer_tier"
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all appearance-none"
+                  >
+                    <option value="all">All Tiers</option>
+                    <option value="nano">Nano (1K-10K)</option>
+                    <option value="micro">Micro (10K-100K)</option>
+                    <option value="macro">Macro (100K-1M)</option>
+                    <option value="mega">Mega (1M+)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                 <div>
                   <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Min. Engagement Rate (%)</label>
                   <input
@@ -417,12 +519,12 @@ export function CreateCampaignForm({ brands }: { brands: Brand[] }) {
                     className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Location</label>
+                <div className="sm:col-span-2">
+                  <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Location (comma-separated)</label>
                   <input
                     name="target_cities"
                     type="text"
-                    placeholder="e.g. Mumbai, Delhi"
+                    placeholder="e.g. Mumbai, Delhi, Bangalore"
                     className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
                   />
                 </div>
@@ -488,26 +590,29 @@ export function CreateCampaignForm({ brands }: { brands: Brand[] }) {
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Start Date</label>
+                <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Start Date <span className="text-red-400">*</span></label>
                 <input
                   name="campaign_start_date"
                   type="date"
+                  required
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Expiry Date</label>
+                <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Expiry Date <span className="text-red-400">*</span></label>
                 <input
                   name="campaign_end_date"
                   type="date"
+                  required
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Application Deadline</label>
+                <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Application Deadline <span className="text-red-400">*</span></label>
                 <input
                   name="application_deadline"
                   type="date"
+                  required
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all"
                 />
               </div>
