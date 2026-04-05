@@ -18,6 +18,31 @@ export async function toggleInfluencerStatus(influencerId: string, currentStatus
   return { success: true, newStatus };
 }
 
+export async function updateInfluencer(influencerId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const updates: Record<string, unknown> = {};
+  const fields = ["full_name", "username", "instagram_handle", "email", "bio", "city_id", "location", "status", "verification_status", "tier", "gender", "date_of_birth"];
+  for (const f of fields) {
+    const v = formData.get(f);
+    if (v !== null) updates[f] = (v as string) || null;
+  }
+  // Handle categories as comma-separated
+  const cats = formData.get("categories") as string;
+  if (cats !== null) updates.categories = cats ? cats.split(",").map((c) => c.trim()).filter(Boolean) : [];
+  updates.updated_at = new Date().toISOString();
+
+  const adminClient = createAdminClient();
+  const { error } = await adminClient.from("influencer_profiles").update(updates).eq("influencer_id", influencerId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/dashboard/influencers/${influencerId}`);
+  revalidatePath("/dashboard/influencers");
+  return { success: true };
+}
+
 export async function uploadInfluencerPhoto(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -46,10 +71,26 @@ export async function inviteInfluencer(formData: FormData) {
   const fullName = formData.get("full_name") as string;
   const instagramUsername = (formData.get("instagram_username") as string)?.replace(/^@/, "").trim();
   const profilePhotoUrl = (formData.get("profile_photo_url") as string) || "";
-  const notes = (formData.get("notes") as string) || "";
+  const notesText = (formData.get("notes") as string) || "";
+  const city = (formData.get("city") as string) || "";
+  const categories = formData.getAll("categories") as string[];
+  const languages = formData.getAll("languages") as string[];
+  const tags = formData.getAll("tags") as string[];
 
   if (!fullName) return { error: "Name is required" };
   if (!instagramUsername) return { error: "Instagram username is required" };
+
+  // Build notes with metadata
+  const metadata: Record<string, unknown> = {};
+  if (city) metadata.city = city;
+  if (categories.length > 0) metadata.categories = categories;
+  if (languages.length > 0) metadata.languages = languages;
+  if (tags.length > 0) metadata.tags = tags;
+
+  let notes = notesText;
+  if (Object.keys(metadata).length > 0) {
+    notes = notes ? `${notes}\n---\n${JSON.stringify(metadata)}` : JSON.stringify(metadata);
+  }
 
   const adminClient = createAdminClient();
 
@@ -83,6 +124,45 @@ export async function deleteInfluencerInvitation(invitationId: string) {
   const { error } = await adminClient.from("influencer_invitations").delete().eq("id", invitationId).eq("status", "pending");
   if (error) return { error: error.message };
 
+  revalidatePath("/dashboard/influencers");
+  return { success: true };
+}
+
+export async function updateInfluencerInvitation(invitationId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const fullName = formData.get("full_name") as string;
+  const instagramUsername = (formData.get("instagram_username") as string)?.replace(/^@/, "").trim();
+  const notesText = (formData.get("notes") as string) || "";
+  const city = (formData.get("city") as string) || "";
+  const categoriesCsv = (formData.get("categories_csv") as string || "").split(",").map(c => c.trim()).filter(Boolean);
+  const languagesCsv = (formData.get("languages_csv") as string || "").split(",").map(l => l.trim()).filter(Boolean);
+  const tagsCsv = (formData.get("tags_csv") as string || "").split(",").map(t => t.trim()).filter(Boolean);
+
+  if (!fullName) return { error: "Name is required" };
+  if (!instagramUsername) return { error: "Instagram username is required" };
+
+  const metadata: Record<string, unknown> = {};
+  if (city) metadata.city = city;
+  if (categoriesCsv.length > 0) metadata.categories = categoriesCsv;
+  if (languagesCsv.length > 0) metadata.languages = languagesCsv;
+  if (tagsCsv.length > 0) metadata.tags = tagsCsv;
+
+  let notes = notesText;
+  if (Object.keys(metadata).length > 0) {
+    notes = notes ? `${notes}\n---\n${JSON.stringify(metadata)}` : JSON.stringify(metadata);
+  }
+
+  const adminClient = createAdminClient();
+  const { error } = await adminClient.from("influencer_invitations").update({
+    full_name: fullName,
+    instagram_username: instagramUsername,
+    notes,
+  }).eq("id", invitationId).eq("status", "pending");
+
+  if (error) return { error: error.message };
   revalidatePath("/dashboard/influencers");
   return { success: true };
 }

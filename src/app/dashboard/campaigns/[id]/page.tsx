@@ -13,11 +13,16 @@ export default async function CampaignDetailPage({
 
   const { data: campaign, error } = await supabase
     .from("campaigns")
-    .select("*, brand_profiles(brand_name, logo_url)")
+    .select("*, brand_profiles(brand_name, logo_url), brand_invitations(brand_name, logo_url)")
     .eq("campaign_id", id)
     .single();
 
   if (error || !campaign) return notFound();
+
+  // Resolve brand info from either registered profile or invitation
+  const brandName = campaign.brand_profiles?.brand_name || campaign.brand_invitations?.brand_name || "—";
+  const brandLogo = campaign.brand_profiles?.logo_url || campaign.brand_invitations?.logo_url || "";
+  const isInvitedBrand = !campaign.brand_id && campaign.brand_invitation_id;
 
   const statusConfig: Record<string, { bg: string; dot: string; label: string }> = {
     draft: { bg: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400", dot: "bg-gray-400", label: "Draft" },
@@ -115,14 +120,20 @@ export default async function CampaignDetailPage({
               </span>
             </div>
             <div className="flex items-center gap-3 mt-1.5">
-              {campaign.brand_profiles?.logo_url ? (
-                <img src={campaign.brand_profiles.logo_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+              {brandLogo ? (
+                <img src={brandLogo} alt="" className="w-5 h-5 rounded-full object-cover" />
               ) : (
                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                  <span className="text-[8px] font-bold text-white">{campaign.brand_profiles?.brand_name?.[0] || "?"}</span>
+                  <span className="text-[8px] font-bold text-white">{brandName[0] || "?"}</span>
                 </div>
               )}
-              <span className="text-sm text-gray-500 dark:text-gray-400">{campaign.brand_profiles?.brand_name || "—"}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{brandName}</span>
+              {isInvitedBrand && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-semibold">Invited</span>
+              )}
+              {campaign.created_by_admin && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-semibold">By Admin</span>
+              )}
               <span className="text-gray-300 dark:text-gray-700">|</span>
               <span className="text-sm text-gray-400 dark:text-gray-500">{typeLabels[campaign.campaign_type] || campaign.campaign_type}</span>
               <span className="text-gray-300 dark:text-gray-700">|</span>

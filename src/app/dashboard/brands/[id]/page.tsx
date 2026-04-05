@@ -2,6 +2,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { RefreshButton } from "@/components/refresh-button";
+import { EditBrandButton } from "./edit-brand";
 
 export default async function BrandDetailPage({
   params,
@@ -63,7 +64,10 @@ export default async function BrandDetailPage({
             </div>
           </div>
         </div>
-        <RefreshButton />
+        <div className="flex items-center gap-2">
+          <EditBrandButton brand={brand} />
+          <RefreshButton />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

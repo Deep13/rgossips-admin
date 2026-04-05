@@ -167,6 +167,45 @@ export function AddBrandForm() {
                     />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Category
+                  </label>
+                  <select
+                    name="category"
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all appearance-none"
+                  >
+                    <option value="">Select category</option>
+                    <option value="Beauty & Skincare">Beauty & Skincare</option>
+                    <option value="Fashion & Lifestyle">Fashion & Lifestyle</option>
+                    <option value="Food & Beverage">Food & Beverage</option>
+                    <option value="Health, Fitness & Wellness">Health, Fitness & Wellness</option>
+                    <option value="Travel & Hospitality">Travel & Hospitality</option>
+                    <option value="Technology & Gadgets">Technology & Gadgets</option>
+                    <option value="Home & Decor">Home & Decor</option>
+                    <option value="Finance & Personal Finance">Finance & Personal Finance</option>
+                    <option value="Education & Career">Education & Career</option>
+                    <option value="Gaming & Entertainment">Gaming & Entertainment</option>
+                    <option value="Automobile & Mobility">Automobile & Mobility</option>
+                    <option value="Entrepreneurship & Business">Entrepreneurship & Business</option>
+                    <option value="Sustainable & Eco-conscious Living">Sustainable & Eco-conscious Living</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Instagram Verified
+                  </label>
+                  <div className="flex items-center gap-4 h-[42px]">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="instagram_verified" value="yes" className="text-indigo-600 focus:ring-indigo-500" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Yes</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="instagram_verified" value="no" defaultChecked className="text-indigo-600 focus:ring-indigo-500" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">No</span>
+                    </label>
+                  </div>
+                </div>
                 <div className="sm:col-span-2">
                   <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     Notes <span className="text-gray-400 font-normal">(optional)</span>

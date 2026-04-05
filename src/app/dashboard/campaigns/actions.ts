@@ -80,6 +80,9 @@ export async function createCampaign(formData: FormData) {
   if (!endDate) return { error: "Expiry date is required" };
   if (!deadline) return { error: "Application deadline is required" };
 
+  // Parse brand selection — format is "type:id" (e.g. "registered:uuid" or "invited:uuid")
+  const [brandType, brandUuid] = brandId.includes(":") ? brandId.split(":", 2) : ["registered", brandId];
+
   const adminClient = createAdminClient();
 
   // Build content_types_required as a structured array
@@ -107,7 +110,9 @@ export async function createCampaign(formData: FormData) {
     : ["All India"];
 
   const { error } = await adminClient.from("campaigns").insert({
-    brand_id: brandId,
+    brand_id: brandType === "registered" ? brandUuid : null,
+    brand_invitation_id: brandType === "invited" ? brandUuid : null,
+    created_by_admin: true,
     title,
     description: fullDescription || title,
     campaign_type: campaignType || "barter",

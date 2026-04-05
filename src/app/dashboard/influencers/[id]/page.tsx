@@ -2,6 +2,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { RefreshButton } from "@/components/refresh-button";
+import { EditInfluencerButton } from "./edit-influencer";
 
 export default async function InfluencerDetailPage({
   params,
@@ -63,7 +64,10 @@ export default async function InfluencerDetailPage({
             </div>
           </div>
         </div>
-        <RefreshButton />
+        <div className="flex items-center gap-2">
+          <EditInfluencerButton influencer={inf} />
+          <RefreshButton />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

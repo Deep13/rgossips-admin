@@ -14,7 +14,10 @@ interface Campaign {
   campaign_end_date: string | null;
   target_categories: string[] | null;
   brand_id: string | null;
+  brand_invitation_id: string | null;
+  created_by_admin: boolean | null;
   brand_profiles: { brand_name: string | null } | null;
+  brand_invitations: { brand_name: string | null } | null;
 }
 
 export function CampaignRow({ campaign }: { campaign: Campaign }) {
@@ -71,7 +74,10 @@ export function CampaignRow({ campaign }: { campaign: Campaign }) {
         )}
       </td>
       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-        {campaign.brand_profiles?.brand_name || "—"}
+        {campaign.brand_profiles?.brand_name || campaign.brand_invitations?.brand_name || "—"}
+        {campaign.brand_invitation_id && !campaign.brand_id && (
+          <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-semibold">Invited</span>
+        )}
       </td>
       <td className="px-6 py-4">
         <span

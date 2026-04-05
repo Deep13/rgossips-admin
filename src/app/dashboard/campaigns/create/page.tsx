@@ -4,14 +4,28 @@ import { CreateCampaignForm } from "./create-campaign-form";
 
 export default async function CreateCampaignPage() {
   const supabase = createAdminClient();
-  const { data: brands } = await supabase
+
+  // Fetch registered brands
+  const { data: registeredBrands } = await supabase
     .from("brand_profiles")
     .select("brand_id, brand_name")
     .order("brand_name");
 
+  // Fetch invited (unregistered) brands
+  const { data: invitedBrands } = await supabase
+    .from("brand_invitations")
+    .select("id, brand_name")
+    .eq("status", "pending")
+    .order("brand_name");
+
+  // Merge into one list with type indicator
+  const allBrands = [
+    ...(registeredBrands || []).map((b) => ({ id: b.brand_id, name: b.brand_name, type: "registered" as const })),
+    ...(invitedBrands || []).map((b) => ({ id: b.id, name: b.brand_name, type: "invited" as const })),
+  ];
+
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Link
           href="/dashboard/campaigns"
@@ -27,7 +41,7 @@ export default async function CreateCampaignPage() {
         </div>
       </div>
 
-      <CreateCampaignForm brands={brands || []} />
+      <CreateCampaignForm brands={allBrands} />
     </div>
   );
 }

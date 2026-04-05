@@ -14,7 +14,7 @@ export default async function CampaignsPage({
 
   let query = supabase
     .from("campaigns")
-    .select("campaign_id, title, status, max_influencers, campaign_start_date, campaign_end_date, target_categories, brand_id, brand_profiles(brand_name)")
+    .select("campaign_id, title, status, max_influencers, campaign_start_date, campaign_end_date, target_categories, brand_id, brand_invitation_id, created_by_admin, brand_profiles(brand_name), brand_invitations(brand_name)")
     .order("created_at", { ascending: false });
 
   if (search) {

@@ -20,8 +20,9 @@ async function uploadImage(file: File, folder: string): Promise<string | null> {
 }
 
 interface Brand {
-  brand_id: string;
-  brand_name: string | null;
+  id: string;
+  name: string | null;
+  type: "registered" | "invited";
 }
 
 interface ImagePreview {
@@ -195,8 +196,8 @@ export function CreateCampaignForm({ brands }: { brands: Brand[] }) {
                   >
                     <option value="">Select a brand</option>
                     {brands.map((b) => (
-                      <option key={b.brand_id} value={b.brand_id}>
-                        {b.brand_name || b.brand_id}
+                      <option key={b.id} value={`${b.type}:${b.id}`}>
+                        {b.name || b.id}{b.type === "invited" ? " (Invited)" : ""}
                       </option>
                     ))}
                   </select>
