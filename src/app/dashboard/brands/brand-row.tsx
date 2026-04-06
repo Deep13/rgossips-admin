@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { updateBrandVerification } from "./actions";
 import { ButtonSpinner } from "@/components/spinner";
 
@@ -15,6 +16,7 @@ interface Brand {
 }
 
 export function BrandRow({ brand }: { brand: Brand }) {
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [verificationStatus, setVerificationStatus] = useState(brand.verification_status);
 
@@ -39,12 +41,9 @@ export function BrandRow({ brand }: { brand: Brand }) {
     "inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border";
 
   return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+    <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/brands/${brand.brand_id}`)}>
       <td className="px-6 py-4">
-        <Link
-          href={`/dashboard/brands/${brand.brand_id}`}
-          className="flex items-center gap-3 group"
-        >
+        <div className="flex items-center gap-3 group">
           {brand.logo_url ? (
             <img src={brand.logo_url} alt="" className="w-8 h-8 rounded-full object-cover" />
           ) : (
@@ -55,7 +54,7 @@ export function BrandRow({ brand }: { brand: Brand }) {
           <span className="text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
             {brand.brand_name || "—"}
           </span>
-        </Link>
+        </div>
       </td>
       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
         {brand.contact_phone || "—"}
@@ -72,7 +71,7 @@ export function BrandRow({ brand }: { brand: Brand }) {
       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 font-mono text-xs">
         {brand.gstin || "—"}
       </td>
-      <td className="px-6 py-4">
+      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
         {verificationStatus === "pending" ? (
           <div className="flex items-center gap-2">
             <button

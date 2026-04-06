@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ButtonSpinner } from "@/components/spinner";
 import { deleteInvitation, updateBrandInvitation } from "./invitation-actions";
 
@@ -45,7 +46,8 @@ export function InvitedBrandRow({ invitation }: { invitation: Invitation }) {
   return (
     <>
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 transition-all duration-300">
-        <div className="flex items-start justify-between mb-4">
+        <Link href={`/dashboard/brands/${invitation.id}`} className="block mb-4">
+          <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             {invitation.logo_url ? (
               <img src={invitation.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover border border-gray-200 dark:border-gray-700" />
@@ -63,7 +65,8 @@ export function InvitedBrandRow({ invitation }: { invitation: Invitation }) {
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             Awaiting Claim
           </span>
-        </div>
+          </div>
+        </Link>
 
         {(text || meta) && (
           <div className="mb-3 space-y-1.5">
