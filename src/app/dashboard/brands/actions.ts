@@ -139,7 +139,7 @@ export async function updateBrand(brandId: string, formData: FormData) {
   if (!user) return { error: "Not authenticated" };
 
   const updates: Record<string, unknown> = {};
-  const fields = ["brand_name", "contact_name", "contact_role", "contact_email", "contact_phone", "instagram_username", "website_url", "short_description", "full_description", "gstin", "status", "verification_status", "listing_type", "tier", "monthly_budget_range", "preferred_influencer_tier"];
+  const fields = ["brand_name", "contact_name", "contact_role", "contact_email", "contact_phone", "instagram_username", "website_url", "short_description", "full_description", "gstin", "status", "verification_status", "listing_type", "tier", "monthly_budget_range", "preferred_influencer_tier", "logo_url"];
   for (const f of fields) {
     const v = formData.get(f);
     if (v !== null) updates[f] = (v as string) || null;

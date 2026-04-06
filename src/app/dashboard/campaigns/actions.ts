@@ -139,20 +139,90 @@ export async function createCampaign(formData: FormData) {
 
 export async function updateCampaignStatus(campaignId: string, status: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
   const adminClient = createAdminClient();
-  const { error } = await adminClient
-    .from("campaigns")
-    .update({ status })
-    .eq("campaign_id", campaignId);
-
+  const { error } = await adminClient.from("campaigns").update({ status }).eq("campaign_id", campaignId);
   if (error) return { error: error.message };
 
+  revalidatePath("/dashboard/campaigns");
+  return { success: true };
+}
+
+export async function updateCampaign(campaignId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
+  const campaignType = formData.get("campaign_type") as string;
+  const maxInfluencers = formData.get("max_influencers") as string;
+  const startDate = formData.get("campaign_start_date") as string;
+  const endDate = formData.get("campaign_end_date") as string;
+  const deadline = formData.get("application_deadline") as string;
+  const budgetTotal = formData.get("budget_total") as string;
+  const budgetPerInfluencer = formData.get("budget_per_influencer") as string;
+  const minFollowers = formData.get("target_follower_min") as string;
+  const followerMax = formData.get("target_follower_max") as string;
+  const influencerTier = formData.get("target_influencer_tier") as string;
+  const targetCities = formData.get("target_cities") as string;
+  const status = formData.get("status") as string;
+  const categories = formData.getAll("category") as string[];
+  const reels = formData.get("num_reels") as string;
+  const posts = formData.get("num_posts") as string;
+  const stories = formData.get("num_stories") as string;
+  const videos = formData.get("num_videos") as string;
+  const bannerUrl = formData.get("banner_image_url") as string | null;
+  const galleryUrlsNew = formData.getAll("gallery_image_urls") as string[];
+  const existingGallery = formData.get("existing_gallery") as string;
+  const minEngagement = formData.get("min_engagement_rate") as string;
+
+  if (!title) return { error: "Title is required" };
+
+  const contentTypes: string[] = [];
+  if (reels && parseInt(reels) > 0) contentTypes.push(`reels:${reels}`);
+  if (posts && parseInt(posts) > 0) contentTypes.push(`posts:${posts}`);
+  if (stories && parseInt(stories) > 0) contentTypes.push(`stories:${stories}`);
+  if (videos && parseInt(videos) > 0) contentTypes.push(`videos:${videos}`);
+
+  let fullDescription = description || "";
+  const metadata: Record<string, unknown> = {};
+  if (bannerUrl) metadata.banner_image = bannerUrl;
+  const allGallery = [
+    ...(existingGallery ? existingGallery.split(",").filter(Boolean) : []),
+    ...galleryUrlsNew.filter(Boolean),
+  ];
+  if (allGallery.length > 0) metadata.gallery_images = allGallery;
+  if (minEngagement) metadata.min_engagement_rate = parseFloat(minEngagement);
+  if (Object.keys(metadata).length > 0) {
+    fullDescription = fullDescription ? `${fullDescription}\n\n---\n${JSON.stringify(metadata)}` : JSON.stringify(metadata);
+  }
+
+  const cities = targetCities ? targetCities.split(",").map((c) => c.trim()).filter(Boolean) : ["All India"];
+  const adminClient = createAdminClient();
+  const updates: Record<string, unknown> = {
+    title, description: fullDescription || title, campaign_type: campaignType || "barter",
+    max_influencers: maxInfluencers ? parseInt(maxInfluencers) : 10,
+    content_types_required: contentTypes.length > 0 ? contentTypes : ["reels"],
+    budget_total: budgetTotal ? parseInt(budgetTotal) : 0,
+    budget_per_influencer: budgetPerInfluencer ? parseInt(budgetPerInfluencer) : 0,
+    target_follower_min: minFollowers ? parseInt(minFollowers) : 0,
+    target_follower_max: followerMax ? parseInt(followerMax) : 1000000,
+    target_influencer_tier: influencerTier || "all",
+    target_cities: cities, target_categories: categories.length > 0 ? categories : ["General"],
+    updated_at: new Date().toISOString(),
+  };
+  if (startDate) updates.campaign_start_date = startDate;
+  if (endDate) updates.campaign_end_date = endDate;
+  if (deadline) updates.application_deadline = deadline;
+  if (status) updates.status = status;
+
+  const { error } = await adminClient.from("campaigns").update(updates).eq("campaign_id", campaignId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/dashboard/campaigns/${campaignId}`);
   revalidatePath("/dashboard/campaigns");
   return { success: true };
 }

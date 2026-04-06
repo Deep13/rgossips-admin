@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { updateBrand } from "../actions";
+import { updateBrand, uploadBrandIcon } from "../actions";
 import { ButtonSpinner } from "@/components/spinner";
 
 const inputClass = "w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all";
@@ -31,10 +31,28 @@ function EditBrandModal({ brand, onClose }: { brand: any; onClose: () => void })
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [logoPreview, setLogoPreview] = useState<string>(brand.logo_url || "");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoSelect = (files: FileList | null) => {
+    if (!files || !files[0] || !files[0].type.startsWith("image/")) return;
+    setLogoFile(files[0]);
+    setLogoPreview(URL.createObjectURL(files[0]));
+  };
 
   const handleSubmit = async (formData: FormData) => {
     setError("");
     setLoading(true);
+    // Upload new logo if changed
+    if (logoFile) {
+      const fd = new FormData();
+      fd.append("file", logoFile);
+      fd.append("folder", "brand-logos");
+      const uploadResult = await uploadBrandIcon(fd);
+      if (uploadResult.error) { setError(uploadResult.error); setLoading(false); return; }
+      if (uploadResult.url) formData.append("logo_url", uploadResult.url);
+    }
     const result = await updateBrand(brand.brand_id, formData);
     if (result.error) {
       setError(result.error);
@@ -58,6 +76,27 @@ function EditBrandModal({ brand, onClose }: { brand: any; onClose: () => void })
 
         <form action={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
           {error && <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">{error}</div>}
+
+          {/* Logo Upload */}
+          <div className="flex items-center gap-5">
+            <div
+              onClick={() => fileRef.current?.click()}
+              className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500 flex items-center justify-center cursor-pointer transition-colors overflow-hidden bg-gray-50 dark:bg-gray-800 shrink-0"
+            >
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              )}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoSelect(e.target.files)} />
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand Logo</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Click to change. JPG, PNG, WebP.</p>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

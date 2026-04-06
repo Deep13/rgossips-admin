@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { CampaignDetailActions } from "./detail-actions";
+import { EditCampaignButton } from "./edit-campaign";
+import { RefreshButton } from "@/components/refresh-button";
 
 export default async function CampaignDetailPage({
   params,
@@ -141,7 +143,11 @@ export default async function CampaignDetailPage({
             </div>
           </div>
         </div>
-        <CampaignDetailActions campaignId={campaign.campaign_id} status={campaign.status} />
+        <div className="flex items-center gap-2">
+          <EditCampaignButton campaign={campaign} description={description} bannerUrl={bannerUrl} galleryUrls={galleryUrls} engagementRate={engagementRate} deliverables={deliverables} />
+          <CampaignDetailActions campaignId={campaign.campaign_id} status={campaign.status} />
+          <RefreshButton />
+        </div>
       </div>
 
       {/* Banner Image */}
