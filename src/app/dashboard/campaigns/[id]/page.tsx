@@ -25,7 +25,7 @@ export default async function CampaignDetailPage({
   // Fetch applications for this campaign
   const { data: applications } = await supabase
     .from("campaign_applications")
-    .select("*, influencer_profiles(full_name, username, profile_photo_url, followers_count, instagram_handle)")
+    .select("*, influencer_profiles(full_name, username, profile_photo_url, followers_count, instagram_handle, categories, bio, engagement_rate, email, media_kit_published)")
     .eq("campaign_id", id)
     .order("created_at", { ascending: false });
 
@@ -188,7 +188,7 @@ export default async function CampaignDetailPage({
           )}
 
           {/* Applications */}
-          <ApplicationsList applications={applications || []} />
+          <ApplicationsList applications={applications || []} budgetPerInfluencer={campaign.budget_per_influencer || 0} />
 
           {/* Content Deliverables */}
           {Object.keys(deliverables).length > 0 && (

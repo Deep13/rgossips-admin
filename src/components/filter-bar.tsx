@@ -16,6 +16,51 @@ interface FilterField {
   options?: FilterOption[];
 }
 
+function DebouncedInput({
+  name,
+  placeholder,
+  initialValue,
+  onDebouncedChange,
+}: {
+  name: string;
+  placeholder: string;
+  initialValue: string;
+  onDebouncedChange: (name: string, value: string) => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const timeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const isFirstRender = useRef(true);
+
+  // Sync when URL params change externally (e.g. clear filters)
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (timeout.current) clearTimeout(timeout.current);
+    timeout.current = setTimeout(() => {
+      onDebouncedChange(name, value);
+    }, 400);
+    return () => {
+      if (timeout.current) clearTimeout(timeout.current);
+    };
+  }, [value, name, onDebouncedChange]);
+
+  return (
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      className="px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+    />
+  );
+}
+
 function MultiSelectDropdown({
   field,
   selected,
@@ -59,7 +104,7 @@ function MultiSelectDropdown({
         </svg>
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
+        <div className="absolute z-50 mt-1 w-56 max-h-64 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
           {field.options?.map((opt) => (
             <label
               key={opt.value}
@@ -151,13 +196,12 @@ export function FilterBar({ fields }: { fields: FilterField[] }) {
             ))}
           </select>
         ) : (
-          <input
+          <DebouncedInput
             key={field.name}
-            type="text"
+            name={field.name}
             placeholder={field.placeholder || field.label}
-            value={searchParams.get(field.name) || ""}
-            onChange={(e) => updateFilter(field.name, e.target.value)}
-            className="px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            initialValue={searchParams.get(field.name) || ""}
+            onDebouncedChange={updateFilter}
           />
         )
       )}
