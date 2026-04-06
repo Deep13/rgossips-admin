@@ -3,27 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const CATEGORIES = [
-  "Hotel",
-  "Food and Dining",
-  "Tech Gadgets",
-  "Fashion and Beauty",
-  "Beauty & Skincare",
-  "Fashion & Lifestyle",
-  "Food & Beverage",
-  "Health, Fitness & Wellness",
-  "Travel & Hospitality",
-  "Technology & Gadgets",
-  "Parenting & Family",
-  "Home & Decor",
-  "Finance & Personal Finance",
-  "Education & Career",
-  "Gaming & Entertainment",
-  "Automobile & Mobility",
-  "Entrepreneurship & Business",
-  "Sustainable & Eco-conscious Living",
-  "Pet Care & Animals",
-];
+import { CATEGORIES } from "@/lib/categories";
 
 const STATUS_OPTIONS = [
   { label: "All", value: "" },

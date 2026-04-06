@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createCampaign, uploadCampaignImage } from "../actions";
 import { FullPageLoader } from "@/components/spinner";
 
-const CATEGORIES = ["Hotel", "Food and Dining", "Tech Gadgets", "Fashion and Beauty"];
+import { CATEGORIES } from "@/lib/categories";
 
 async function uploadImage(file: File, folder: string): Promise<string | null> {
   const fd = new FormData();

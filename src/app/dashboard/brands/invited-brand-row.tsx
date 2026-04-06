@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ButtonSpinner } from "@/components/spinner";
 import { deleteInvitation, updateBrandInvitation } from "./invitation-actions";
+import { CATEGORIES } from "@/lib/categories";
 
 interface Invitation {
   id: string;
@@ -140,7 +141,7 @@ function EditBrandInviteModal({ invitation, text, meta, onClose }: { invitation:
               <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category</label>
               <select name="category" defaultValue={meta?.category || ""} className={inputClass}>
                 <option value="">None</option>
-                {["Beauty & Skincare","Fashion & Lifestyle","Food & Beverage","Health, Fitness & Wellness","Travel & Hospitality","Technology & Gadgets","Home & Decor","Finance & Personal Finance","Education & Career","Gaming & Entertainment","Automobile & Mobility","Entrepreneurship & Business","Sustainable & Eco-conscious Living"].map(c => <option key={c} value={c}>{c}</option>)}
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>

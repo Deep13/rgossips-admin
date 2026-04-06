@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { inviteBrand, uploadBrandIcon } from "./actions";
 import { ButtonSpinner } from "@/components/spinner";
 import { FullPageLoader } from "@/components/spinner";
+import { CATEGORIES } from "@/lib/categories";
 
 export function AddBrandForm() {
   const [open, setOpen] = useState(false);
@@ -176,19 +177,7 @@ export function AddBrandForm() {
                     className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 transition-all appearance-none"
                   >
                     <option value="">Select category</option>
-                    <option value="Beauty & Skincare">Beauty & Skincare</option>
-                    <option value="Fashion & Lifestyle">Fashion & Lifestyle</option>
-                    <option value="Food & Beverage">Food & Beverage</option>
-                    <option value="Health, Fitness & Wellness">Health, Fitness & Wellness</option>
-                    <option value="Travel & Hospitality">Travel & Hospitality</option>
-                    <option value="Technology & Gadgets">Technology & Gadgets</option>
-                    <option value="Home & Decor">Home & Decor</option>
-                    <option value="Finance & Personal Finance">Finance & Personal Finance</option>
-                    <option value="Education & Career">Education & Career</option>
-                    <option value="Gaming & Entertainment">Gaming & Entertainment</option>
-                    <option value="Automobile & Mobility">Automobile & Mobility</option>
-                    <option value="Entrepreneurship & Business">Entrepreneurship & Business</option>
-                    <option value="Sustainable & Eco-conscious Living">Sustainable & Eco-conscious Living</option>
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>

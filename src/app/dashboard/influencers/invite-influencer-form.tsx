@@ -4,13 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { inviteInfluencer, uploadInfluencerPhoto } from "./actions";
 import { ButtonSpinner, FullPageLoader } from "@/components/spinner";
 
-const CATEGORIES = [
-  "Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage",
-  "Health, Fitness & Wellness", "Travel & Hospitality", "Technology & Gadgets",
-  "Parenting & Family", "Home & Decor", "Finance & Personal Finance",
-  "Education & Career", "Gaming & Entertainment", "Automobile & Mobility",
-  "Entrepreneurship & Business", "Sustainable & Eco-conscious Living", "Pet Care & Animals",
-];
+import { CATEGORIES } from "@/lib/categories";
 
 const LANGUAGES = [
   "English", "Hindi", "Tamil", "Telugu", "Kannada", "Malayalam",

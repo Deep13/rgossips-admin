@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { CampaignDetailActions } from "./detail-actions";
 import { EditCampaignButton } from "./edit-campaign";
 import { RefreshButton } from "@/components/refresh-button";
+import { ApplicationsList } from "./applications";
 
 export default async function CampaignDetailPage({
   params,
@@ -20,6 +21,13 @@ export default async function CampaignDetailPage({
     .single();
 
   if (error || !campaign) return notFound();
+
+  // Fetch applications for this campaign
+  const { data: applications } = await supabase
+    .from("campaign_applications")
+    .select("*, influencer_profiles(full_name, username, profile_photo_url, followers_count, instagram_handle)")
+    .eq("campaign_id", id)
+    .order("created_at", { ascending: false });
 
   // Resolve brand info from either registered profile or invitation
   const brandName = campaign.brand_profiles?.brand_name || campaign.brand_invitations?.brand_name || "—";
@@ -178,6 +186,9 @@ export default async function CampaignDetailPage({
               </div>
             </div>
           )}
+
+          {/* Applications */}
+          <ApplicationsList applications={applications || []} />
 
           {/* Content Deliverables */}
           {Object.keys(deliverables).length > 0 && (

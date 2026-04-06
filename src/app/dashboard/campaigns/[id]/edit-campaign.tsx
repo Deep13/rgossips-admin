@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { updateCampaign, uploadCampaignImage } from "../actions";
 import { ButtonSpinner, FullPageLoader } from "@/components/spinner";
+import { CATEGORIES } from "@/lib/categories";
 
 const inputClass = "w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all";
 const labelClass = "block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5";
@@ -104,7 +105,7 @@ function EditCampaignModal({ campaign, description, bannerUrl, galleryUrls, enga
     } catch (e) { setError(e instanceof Error ? e.message : "Something went wrong"); setLoading(false); }
   };
 
-  const CATEGORIES = ["Hotel", "Food and Dining", "Tech Gadgets", "Fashion and Beauty", "Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage", "Health, Fitness & Wellness", "Travel & Hospitality", "Technology & Gadgets", "Sustainable & Eco-conscious Living"];
+  // Categories from shared constant
 
   return (
     <>

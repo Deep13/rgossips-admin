@@ -137,6 +137,22 @@ export async function createCampaign(formData: FormData) {
   return { success: true };
 }
 
+export async function updateApplicationStatus(applicationId: string, newStatus: string, rejectionReason?: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const adminClient = createAdminClient();
+  const updates: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() };
+  if (rejectionReason) updates.rejection_reason = rejectionReason;
+
+  const { error } = await adminClient.from("campaign_applications").update(updates).eq("id", applicationId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard/campaigns");
+  return { success: true };
+}
+
 export async function updateCampaignStatus(campaignId: string, status: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
