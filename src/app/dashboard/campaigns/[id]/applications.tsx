@@ -16,7 +16,7 @@ interface Application {
   final_agreed_rate: number | null;
   status: string;
   rejection_reason: string | null;
-  submission_links: string[] | null;
+  submission_links: Array<{ url: string; type: string; label: string }> | null;
   created_at: string;
   influencer_profiles: {
     full_name: string | null;
@@ -117,14 +117,6 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
     else router.refresh();
     setLoading(false);
     setShowReject(false);
-  };
-
-  const handleComplete = async () => {
-    setLoading(true);
-    const result = await updateApplicationStatus(application.id, "completed");
-    if (result.error) alert(result.error);
-    else router.refresh();
-    setLoading(false);
   };
 
   const btnBase = "inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border";
@@ -330,16 +322,17 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
             </div>
           </div>
           <div className="p-4 space-y-2">
-            {application.submission_links.map((link, i) => (
-              <a key={i} href={link} target="_blank" rel="noopener noreferrer"
+            {application.submission_links.map((item, i) => (
+              <a key={i} href={item.url} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 transition-colors group">
                 <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-500 group-hover:scale-105 transition-transform shrink-0">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Deliverable {i + 1}</p>
-                  <p className="text-[10px] text-gray-400 truncate">{link}</p>
+                  <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors capitalize">{item.label || item.type || `Deliverable ${i + 1}`}</p>
+                  <p className="text-[10px] text-gray-400 truncate">{item.url}</p>
                 </div>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-semibold capitalize shrink-0">{item.type}</span>
                 <svg className="w-4 h-4 text-gray-300 group-hover:text-purple-400 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </a>
             ))}

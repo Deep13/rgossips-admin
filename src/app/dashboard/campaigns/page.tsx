@@ -94,9 +94,6 @@ export default async function CampaignsPage({
               <th className="text-left text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-6 py-3.5">
                 Dates
               </th>
-              <th className="text-left text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-6 py-3.5">
-                Actions
-              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -107,7 +104,7 @@ export default async function CampaignsPage({
             ) : (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={5}
                   className="px-6 py-16 text-center"
                 >
                   <div className="flex flex-col items-center gap-3">

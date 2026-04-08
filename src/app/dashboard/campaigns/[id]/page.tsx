@@ -34,6 +34,13 @@ export default async function CampaignDetailPage({
   const brandLogo = campaign.brand_profiles?.logo_url || campaign.brand_invitations?.logo_url || "";
   const isInvitedBrand = !campaign.brand_id && campaign.brand_invitation_id;
 
+  // Slots: count applications that are approved/submitted/revision_needed/accepted/completed (not rejected/withdrawn/pending)
+  const filledSlots = (applications || []).filter((a: any) =>
+    ["approved", "submitted", "revision_needed", "accepted", "completed"].includes(a.status)
+  ).length;
+  const totalSlots = campaign.max_influencers || 0;
+  const availableSlots = Math.max(0, totalSlots - filledSlots);
+
   const statusConfig: Record<string, { bg: string; dot: string; label: string }> = {
     draft: { bg: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400", dot: "bg-gray-400", label: "Draft" },
     active: { bg: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500", label: "Active" },
@@ -295,7 +302,7 @@ export default async function CampaignDetailPage({
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Overview</h2>
             </div>
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
-              <StatRow label="Total Slots" value={String(campaign.max_influencers ?? "—")} />
+              <StatRow label="Slots" value={totalSlots > 0 ? `${availableSlots} / ${totalSlots} available` : "—"} />
               <StatRow label="Campaign Type" value={typeLabels[campaign.campaign_type] || campaign.campaign_type || "—"} />
               <StatRow label="Budget Total" value={campaign.budget_total ? `₹${campaign.budget_total.toLocaleString()}` : "—"} />
               <StatRow label="Per Influencer" value={campaign.budget_per_influencer ? `₹${campaign.budget_per_influencer.toLocaleString()}` : "—"} />
