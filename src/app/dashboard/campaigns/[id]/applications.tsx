@@ -90,7 +90,7 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
   const [showRevision, setShowRevision] = useState(false);
   const [reason, setReason] = useState("");
   const [revisionNote, setRevisionNote] = useState("");
-  const [revisionLinks, setRevisionLinks] = useState<string[]>([]);
+  const [revisionIndexes, setRevisionIndexes] = useState<number[]>([]);
   const [payAmount, setPayAmount] = useState(String(application.proposed_rate || budgetPerInfluencer || 0));
   const [payNote, setPayNote] = useState("");
   const inf = application.influencer_profiles;
@@ -105,17 +105,19 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
   };
 
   const handleRevision = async () => {
-    if (revisionLinks.length === 0) { alert("Please select at least one deliverable that needs revision."); return; }
+    if (revisionIndexes.length === 0) { alert("Please select at least one deliverable that needs revision."); return; }
+    const links = application.submission_links || [];
+    const selectedLabels = revisionIndexes.map((i) => links[i]?.label || links[i]?.type || `Deliverable ${i + 1}`);
     setLoading(true);
-    const result = await updateApplicationStatus(application.id, "revision_needed", undefined, undefined, undefined, revisionNote, revisionLinks);
+    const result = await updateApplicationStatus(application.id, "revision_needed", undefined, undefined, undefined, revisionNote, selectedLabels);
     if (result.error) alert(result.error);
     else router.refresh();
     setLoading(false);
     setShowRevision(false);
   };
 
-  const toggleRevisionLink = (url: string) => {
-    setRevisionLinks((prev) => prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]);
+  const toggleRevisionIndex = (idx: number) => {
+    setRevisionIndexes((prev) => prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]);
   };
 
   const handleApprove = async () => {
@@ -382,9 +384,9 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
                 <h4 className="text-xs font-semibold text-orange-700 dark:text-orange-300">Select deliverables that need revision:</h4>
                 <div className="space-y-2">
                   {application.submission_links.map((item, i) => {
-                    const selected = revisionLinks.includes(item.url);
+                    const selected = revisionIndexes.includes(i);
                     return (
-                      <button key={i} type="button" onClick={() => toggleRevisionLink(item.url)}
+                      <button key={i} type="button" onClick={() => toggleRevisionIndex(i)}
                         className={`flex items-center gap-3 w-full p-3 rounded-xl text-left transition-all cursor-pointer border ${
                           selected
                             ? "bg-orange-100 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700"
@@ -413,12 +415,12 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
                     className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-orange-200 dark:border-orange-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none" />
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleRevision} disabled={loading || revisionLinks.length === 0}
+                  <button onClick={handleRevision} disabled={loading || revisionIndexes.length === 0}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 disabled:bg-orange-300 disabled:cursor-not-allowed text-white text-sm font-semibold cursor-pointer transition-colors">
                     {loading ? <ButtonSpinner /> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>}
-                    Send for Revision ({revisionLinks.length} selected)
+                    Send for Revision ({revisionIndexes.length} selected)
                   </button>
-                  <button onClick={() => { setShowRevision(false); setRevisionLinks([]); setRevisionNote(""); }}
+                  <button onClick={() => { setShowRevision(false); setRevisionIndexes([]); setRevisionNote(""); }}
                     className="px-5 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium cursor-pointer">
                     Cancel
                   </button>
