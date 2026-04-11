@@ -142,7 +142,9 @@ export async function updateApplicationStatus(
   newStatus: string,
   rejectionReason?: string,
   agreedRate?: number,
-  approvalNote?: string,
+  _approvalNote?: string,
+  revisionNote?: string,
+  revisionLinks?: string[],
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -152,6 +154,9 @@ export async function updateApplicationStatus(
   const updates: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() };
   if (rejectionReason) updates.rejection_reason = rejectionReason;
   if (agreedRate && newStatus === "approved") updates.final_agreed_rate = agreedRate;
+  if (newStatus === "revision_needed" && (revisionNote || revisionLinks)) {
+    updates.rejection_reason = JSON.stringify({ note: revisionNote || "", links: revisionLinks || [] });
+  }
 
   const { error } = await adminClient.from("campaign_applications").update(updates).eq("id", applicationId);
   if (error) return { error: error.message };

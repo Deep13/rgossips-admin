@@ -87,7 +87,10 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
   const [loading, setLoading] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showReject, setShowReject] = useState(false);
+  const [showRevision, setShowRevision] = useState(false);
   const [reason, setReason] = useState("");
+  const [revisionNote, setRevisionNote] = useState("");
+  const [revisionLinks, setRevisionLinks] = useState<string[]>([]);
   const [payAmount, setPayAmount] = useState(String(application.proposed_rate || budgetPerInfluencer || 0));
   const [payNote, setPayNote] = useState("");
   const inf = application.influencer_profiles;
@@ -99,6 +102,20 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
     if (result.error) alert(result.error);
     else router.refresh();
     setLoading(false);
+  };
+
+  const handleRevision = async () => {
+    if (revisionLinks.length === 0) { alert("Please select at least one deliverable that needs revision."); return; }
+    setLoading(true);
+    const result = await updateApplicationStatus(application.id, "revision_needed", undefined, undefined, undefined, revisionNote, revisionLinks);
+    if (result.error) alert(result.error);
+    else router.refresh();
+    setLoading(false);
+    setShowRevision(false);
+  };
+
+  const toggleRevisionLink = (url: string) => {
+    setRevisionLinks((prev) => prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]);
   };
 
   const handleApprove = async () => {
@@ -338,23 +355,75 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
             ))}
           </div>
 
-          {application.status === "submitted" && (
+          {application.status === "submitted" && !showRevision && (
             <div className="px-4 pb-4 flex flex-wrap gap-2">
               <button onClick={() => handleAction("accepted")} disabled={loading}
                 className={`${btnBase} bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100`}>
                 {loading ? <ButtonSpinner /> : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
                 Accept & Release Payment
               </button>
-              <button onClick={() => handleAction("revision_needed")} disabled={loading}
+              <button onClick={() => { setShowRevision(true); setShowReject(false); }} disabled={loading}
                 className={`${btnBase} bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800 hover:bg-orange-100`}>
-                {loading ? <ButtonSpinner /> : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>}
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                 Need Revision
               </button>
-              <button onClick={() => { setShowReject(true); }} disabled={loading}
+              <button onClick={() => { setShowReject(true); setShowRevision(false); }} disabled={loading}
                 className={`${btnBase} bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100`}>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 Reject
               </button>
+            </div>
+          )}
+
+          {/* Revision Selection Panel */}
+          {showRevision && application.status === "submitted" && application.submission_links && (
+            <div className="px-4 pb-4 space-y-3">
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-900/30 space-y-3">
+                <h4 className="text-xs font-semibold text-orange-700 dark:text-orange-300">Select deliverables that need revision:</h4>
+                <div className="space-y-2">
+                  {application.submission_links.map((item, i) => {
+                    const selected = revisionLinks.includes(item.url);
+                    return (
+                      <button key={i} type="button" onClick={() => toggleRevisionLink(item.url)}
+                        className={`flex items-center gap-3 w-full p-3 rounded-xl text-left transition-all cursor-pointer border ${
+                          selected
+                            ? "bg-orange-100 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700"
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800"
+                        }`}>
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          selected ? "bg-orange-500 border-orange-500" : "border-gray-300 dark:border-gray-600"
+                        }`}>
+                          {selected && (
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 capitalize">{item.label || item.type}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{item.url}</p>
+                        </div>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 font-semibold capitalize shrink-0">{item.type}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-orange-700 dark:text-orange-300 mb-1.5">Revision Note</label>
+                  <textarea value={revisionNote} onChange={(e) => setRevisionNote(e.target.value)} rows={2}
+                    placeholder="Explain what needs to be changed..."
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-orange-200 dark:border-orange-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleRevision} disabled={loading || revisionLinks.length === 0}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 disabled:bg-orange-300 disabled:cursor-not-allowed text-white text-sm font-semibold cursor-pointer transition-colors">
+                    {loading ? <ButtonSpinner /> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>}
+                    Send for Revision ({revisionLinks.length} selected)
+                  </button>
+                  <button onClick={() => { setShowRevision(false); setRevisionLinks([]); setRevisionNote(""); }}
+                    className="px-5 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium cursor-pointer">
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -371,6 +440,37 @@ function ApplicationRow({ application, budgetPerInfluencer }: { application: App
           <button onClick={() => setShowReject(false)} className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs cursor-pointer">Cancel</button>
         </div>
       )}
+
+      {/* Revision details */}
+      {application.status === "revision_needed" && application.rejection_reason && (() => {
+        let revData: { note?: string; links?: string[] } = {};
+        try { revData = JSON.parse(application.rejection_reason); } catch {}
+        if (!revData.note && !revData.links?.length) return null;
+        return (
+          <div className="mt-3 p-4 rounded-xl bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 space-y-2">
+            <h4 className="text-xs font-semibold text-orange-700 dark:text-orange-300 flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Revision Requested
+            </h4>
+            {revData.note && <p className="text-xs text-orange-600 dark:text-orange-400">{revData.note}</p>}
+            {revData.links && revData.links.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-orange-500 uppercase tracking-wider">Links to revise:</p>
+                {revData.links.map((url, i) => {
+                  const match = application.submission_links?.find((s) => s.url === url);
+                  return (
+                    <div key={i} className="flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400">
+                      <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" /></svg>
+                      <span className="font-semibold capitalize">{match?.label || match?.type || "Link"}</span>
+                      <span className="text-orange-400 truncate">{url}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Escrow info for approved/submitted */}
       {["approved", "submitted", "revision_needed"].includes(application.status) && application.final_agreed_rate != null && (
